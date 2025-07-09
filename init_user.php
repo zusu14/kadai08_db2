@@ -1,5 +1,6 @@
 <?php
 function initUser(PDO $pdo){
+  // セッション開始（$_SESSIONにアクセスするために必要）
   session_start();
 
   if(!isset($_SESSION['user_id'])){
@@ -17,6 +18,6 @@ function initUser(PDO $pdo){
   
     $_SESSION['user_id'] = $pdo->lastInsertId();
   }
-  return $_SESSION['user_id'];
+  return $_SESSION['user_id']; // stringで返されているっぽい
 }
 
