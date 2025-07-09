@@ -2,15 +2,21 @@
 // var_dump($_GET);
 // exit();
 
+// セッション開始（$_SESSIONにアクセスするために必要）
+// session_start();
+
+include('db_connect.php');
+include('init_user.php');
+
+$pdo = db_connect();
+$user_id = (int)initUser($pdo); // intにキャスト
+
 // GETパラメータのチェック
 if(!isset($_GET['kadai_id']) || !is_numeric($_GET['kadai_id'])){
   exit('ParamError');
 }
-$kadai_id = (int)$_GET['kadai_id']; // int型にキャスト
+$kadai_id = (int)$_GET['kadai_id']; // intにキャスト
 
-// DB接続
-include('db_connect.php');
-$pdo = db_connect();
 
 // 課題情報取得
 $sql = 'SELECT * FROM kadai WHERE id = :kadai_id'; // プレースホルダ
@@ -34,7 +40,7 @@ if(!$kadai) {
 }
 
 // コメント一覧取得（投稿日降順）
-$sql = 'SELECT nickname, comment, created_at FROM comment WHERE kadai_id=:kadai_id ORDER BY created_at DESC';
+$sql = 'SELECT id, user_id, nickname, comment, created_at FROM comment WHERE kadai_id=:kadai_id ORDER BY created_at DESC';
 $stmt = $pdo->prepare($sql);
 
 // SQLインジェクション対策　方法② vindValue()
@@ -58,7 +64,7 @@ $comments = $stmt->fetchAll(PDO::FETCH_ASSOC); // カラム名をキーとした
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <p><a href="developer.php">課題一覧に戻る</a></p>
+  <p><a href="developer.php?id=<?= htmlspecialchars($kadai['developer_id']) ?>">課題一覧に戻る</a></p>
   <h1>「<?= htmlspecialchars($kadai['title']) ?>」の掲示板</h1>
 
   <!-- 課題情報 -->
@@ -113,6 +119,15 @@ $comments = $stmt->fetchAll(PDO::FETCH_ASSOC); // カラム名をキーとした
           <strong><?= htmlspecialchars($comment['nickname']) ?></strong>
           (<?= htmlspecialchars($comment['created_at'])?>)<br>
           <?= nl2br(htmlspecialchars($comment['comment'])) ?>
+          
+          <!-- user_idが一致したコメントのみ更新・削除を表示 -->
+           <!-- === は型の一致も確認する厳密比較 -->
+          <?php if($comment['user_id'] === $user_id): ?>
+            <div class="comment-actions">
+              <a href="comment_edit.php?id=<?= $comment['id'] ?>">編集</a>
+              <a href="comment_delete.php?id=<?= $comment['id'] ?>" onclick="return confirm('削除してもよろしいですか？');">削除</a>
+            </div>
+          <?php endif ?>
         </div>
       <?php endforeach; ?>
     <?php endif; ?>
